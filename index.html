@@ -97,6 +97,13 @@ main{padding:0 12px}
 .hs-sketch{background:var(--surface2);border-radius:12px;padding:12px 12px 8px;margin-bottom:10px;color:var(--accent)}
 .hs-sketch svg{display:block;width:100%;max-width:260px;height:auto;margin:0 auto}
 .hs-sketch .hs-cap b{color:var(--text)}
+.hs-pose svg{max-width:300px}
+.hs-sketch .gnd{opacity:.35;stroke-dasharray:4 4}
+.hs-sketch .ghost{opacity:.35}
+.st-row{display:flex;align-items:center;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.st-txt{flex:1;min-width:0}
+.st-txt b{display:block;font-size:.92rem}
+.st-txt span{color:var(--muted);font-size:.78rem}
 .hs-target{margin-top:12px;color:var(--accent);font-weight:800;font-size:.9rem}
 .hs-steps{margin:10px 0 0 20px;line-height:1.5;font-size:.95rem}
 .hs-steps li{margin-bottom:8px;padding-left:2px}
@@ -396,6 +403,85 @@ const ALTS = {
    q = search words for the demo-video button (needs internet).
    Lookup order: "<original>__<swap>" → "<swap key>" → "<original id>".
    ============================================================ */
+
+/* ============================================================
+   STRETCHES — numbered as in your training plan (#1 Quad … #15 Abdominal).
+   Each has a simple figure drawing (POSES) of the position.
+   ============================================================ */
+const G = '<line class="gnd" x1="10" y1="124" x2="190" y2="124"/>';
+const H = (x,y)=>`<circle cx="${x}" cy="${y}" r="9"/>`;
+const POSES = {
+  quad: G+'<line class="gnd" x1="150" y1="6" x2="150" y2="124"/>'+H(100,20)+
+    '<path d="M100 29 L100 74 L106 123 M100 74 L92 102 L74 86 M100 40 L84 62 L74 86 M100 40 L125 46 L148 42"/>',
+  calf: G+'<line class="gnd" x1="172" y1="6" x2="172" y2="124"/>'+H(137,30)+
+    '<path d="M100 78 L130 40 M130 42 L152 46 L170 42 M100 78 L60 123 L46 123 M100 78 L126 100 L132 123 L146 123"/>',
+  lat: G+'<line class="gnd" x1="162" y1="30" x2="162" y2="124"/>'+H(124,86)+
+    '<path d="M114 70 L160 66 M114 74 L160 72 M114 72 L70 74 L74 98 L72 123 M70 74 L64 98 L62 123"/>',
+  chest: G+'<line class="gnd" x1="66" y1="6" x2="66" y2="124"/>'+H(104,20)+
+    '<path d="M104 29 L104 76 L94 123 M104 76 L116 123 M104 40 L72 40 L70 16 M104 40 L112 70"/>',
+  shoulder: G+H(100,20)+
+    '<path d="M100 29 L100 76 L90 123 M100 76 L110 123 M112 40 L66 48 M88 40 L82 58 L98 50"/>',
+  tricep: G+H(100,26)+
+    '<path d="M100 35 L100 80 L90 123 M100 80 L110 123 M110 40 L114 8 L100 22 M90 40 L92 14 L112 8"/>',
+  bicep: G+H(104,20)+
+    '<path d="M104 29 L104 76 L96 123 M104 76 L114 123 M104 40 L80 64 L72 80 M104 40 L84 62 L74 80"/>',
+  neck: G+'<circle cx="110" cy="24" r="9"/>'+
+    '<path d="M100 36 L100 80 L90 123 M100 80 L110 123 M100 38 L104 33 M108 40 L128 20 L116 13 M92 40 L84 72"/>',
+  hamstring: G+H(118,82)+
+    '<path d="M70 120 L150 120 L152 106 M70 120 L108 90 M104 94 L134 108 L148 110 M70 120 L90 110 L94 121"/>',
+  hipflexor: G+H(93,33)+
+    '<path d="M60 123 L34 123 M60 123 L90 88 L122 96 L122 123 L136 123 M90 88 L92 43 M92 52 L82 70 L90 86"/>',
+  upperback: G+H(110,32)+
+    '<path d="M95 78 Q82 55 102 40 M102 44 L130 50 L150 50 M95 78 L104 100 L98 123 M95 78 L92 100 L86 123"/>',
+  glute: G+'<rect x="56" y="94" width="48" height="29" rx="3"/>'+H(110,38)+
+    '<path d="M96 92 L106 48 M104 56 L124 74 M96 92 L134 94 L136 123 M96 92 L126 78 L138 90"/>',
+  abs: G+H(56,70)+
+    '<path d="M100 118 L64 82 M68 86 L70 122 M100 118 L158 121"/>',
+  foam: G+H(42,92)+'<circle cx="118" cy="112" r="10"/>'+
+    '<path d="M54 98 L100 104 L160 118 M54 98 L50 122 L66 122"/>',
+  hip9090: G+H(92,62)+
+    '<path d="M90 120 L92 72 M92 82 L80 104 M92 82 L104 104 M90 120 L126 118 L120 110 M90 120 L58 118 L56 104"/>',
+  tspine: G+H(48,108)+
+    '<path d="M58 112 L104 114 L126 98 L146 114 M64 108 L94 88"/><path class="ghost" d="M64 108 L36 86"/><path d="M94 82 Q66 62 40 80" stroke-dasharray="4 4"/><path d="M44 72 L38 82 L50 84"/>',
+  deepsquat: G+'<line class="gnd" x1="152" y1="20" x2="152" y2="124"/>'+H(114,62)+
+    '<path d="M96 112 L110 72 M96 112 L122 100 L116 123 L128 123 M110 78 L134 80 L150 78"/>',
+  deadhang: '<line class="gnd" x1="10" y1="134" x2="190" y2="134"/><line x1="60" y1="10" x2="140" y2="10"/>'+H(100,30)+
+    '<path d="M90 11 L92 40 M110 11 L108 40 M92 40 L108 40 M100 40 L100 82 L96 122 M100 82 L104 122"/>'
+};
+const STRETCHES = {
+  1:{name:'Quad stretch', hold:'30 sec each side × 2', pose:'quad', q:'standing quad stretch',
+     steps:['Stand tall, one hand on a wall for balance.','Bend one knee and hold that foot behind you.','Pull the heel toward your glute, knees together, hips pushed slightly forward.','Feel the stretch in the front of the thigh. Switch sides.']},
+  2:{name:'Calf stretch', hold:'30 sec each side × 2', pose:'calf', q:'wall calf stretch',
+     steps:['Hands on a wall, one foot back.','Back leg straight, heel pressed to the floor.','Bend the front knee and lean into the wall.','Feel it in the back calf. Switch sides.']},
+  3:{name:'Lat stretch', hold:'30 sec × 2', pose:'lat', q:'standing lat stretch holding rack hips back',
+     steps:['Hold a rack or post at waist height with both hands.','Walk back until your arms are straight.','Push your hips back and let your chest sink toward the floor, back flat.','Feel it along the sides of your back. Shift a bit left and right to target each side.']},
+  4:{name:'Chest stretch', hold:'30 sec each side × 2', pose:'chest', q:'doorway chest stretch',
+     steps:['Stand in a doorway or next to a post.','Forearm against the frame, elbow at shoulder height.','Step forward and turn your chest away until you feel the stretch.','Keep your shoulder down. Switch sides.']},
+  5:{name:'Shoulder stretch', hold:'30 sec each side × 2', pose:'shoulder', q:'cross body shoulder stretch',
+     steps:['Bring one arm straight across your chest.','Hook the other forearm over it, just above the elbow.','Pull it gently toward your chest.','Keep the shoulder down, not up by your ear. Switch sides.']},
+  6:{name:'Tricep stretch', hold:'30 sec each side × 2', pose:'tricep', q:'overhead tricep stretch',
+     steps:['Raise one arm overhead and bend the elbow, hand behind your head.','Hold the elbow with the other hand.','Gently push the elbow back and down.','Stand tall, don\'t arch. Switch sides.']},
+  7:{name:'Bicep stretch', hold:'30 sec × 2', pose:'bicep', q:'standing bicep stretch hands behind back',
+     steps:['Clasp your hands behind your back, palms together or facing down.','Straighten your arms.','Lift your hands slightly up and away from your back, chest open.','Feel it in the front of the arms and shoulders.']},
+  8:{name:'Neck stretch', hold:'30 sec each side × 2', pose:'neck', q:'neck side stretch',
+     steps:['Sit or stand tall, shoulders relaxed.','Tilt your ear toward your shoulder.','Rest the same-side hand on your head — let its weight do the work, don\'t pull hard.','Let the other shoulder drop. Switch sides.']},
+  9:{name:'Hamstring stretch', hold:'30 sec each side × 2', pose:'hamstring', q:'seated single leg hamstring stretch',
+     steps:['Sit with one leg straight, the other foot against your inner thigh.','Keep your back straight.','Hinge forward from the hips and reach toward your toes.','Feel it behind the thigh, not in your lower back. Switch sides.']},
+  11:{name:'Hip flexor stretch', hold:'1 min each side (2 min total)', pose:'hipflexor', q:'kneeling hip flexor stretch',
+     steps:['Kneel on one knee, the other foot flat in front (lunge position).','Tuck your tailbone and squeeze the glute of the back leg.','Shift your hips forward gently.','Feel it at the front of the back hip. Switch sides.']},
+  12:{name:'Upper back stretch', hold:'30 sec × 2', pose:'upperback', q:'upper back stretch clasp hands round back',
+     steps:['Clasp your hands in front of you, arms straight.','Push your hands away and round your upper back.','Drop your chin slightly and spread your shoulder blades.','Breathe into your upper back.']},
+  14:{name:'Glute stretch', hold:'30 sec each side × 2', pose:'glute', q:'seated figure 4 glute stretch',
+     steps:['Sit on a bench, feet flat.','Cross one ankle over the other knee (figure 4).','Keep your back straight and lean forward from the hips.','Feel it deep in the hip/glute of the crossed leg. Switch sides.']},
+  15:{name:'Abdominal stretch', hold:'30 sec × 2', pose:'abs', q:'cobra stretch abdominal',
+     steps:['Lie face down, hands under your shoulders.','Press up slowly, lifting your chest. Hips stay on the floor.','Shoulders down, look forward.','Feel a gentle stretch in your abs. Lower if your lower back pinches.']}
+};
+function stretchList(text){
+  const out=[]; const re=/#(\d+)/g; let m;
+  while((m=re.exec(text||''))){ const n=+m[1]; if(STRETCHES[n]) out.push(n); }
+  return out;
+}
+
 const AB_WHEEL_INFO = {photo:null, q:'ab wheel rollout from knees form',
   steps:['Kneel on a mat, hands on the wheel under your shoulders.',
          'Brace your abs and keep your lower back slightly rounded (tuck your tailbone).',
@@ -554,7 +640,7 @@ const INFO = {
            'Raise your knees toward your chest, curl your hips up slightly.',
            'Lower slowly, no swinging.'],
     tip:'Too hard? Bend your knees more.'},
-  hip_flexor:{photo:null, q:'kneeling hip flexor stretch',
+  hip_flexor:{pose:'hipflexor', photo:null, q:'kneeling hip flexor stretch',
     steps:['Kneel on one knee, other foot in front (lunge position).',
            'Tuck your tailbone and squeeze the glute of the back leg.',
            'Shift forward gently until you feel a stretch in the front of the hip.',
@@ -562,11 +648,11 @@ const INFO = {
     tip:'Mandatory — counteracts sitting.'},
 
   /* ---------- Sunday mobility ---------- */
-  foam:{photo:null, q:'foam rolling quads it band upper back lats', steps:['Roll quads, IT band, upper back and lats.','Slow passes, pause on tight spots for 20–30 seconds.','5 minutes total.'], tip:''},
-  hip9090:{photo:null, q:'90 90 hip stretch', steps:['Sit with both legs bent at 90°, one in front, one to the side.','Sit tall, lean slightly over the front shin.','60 seconds per side.'], tip:''},
-  tspine:{photo:null, q:'thoracic spine rotation open book', steps:['Lie on your side, knees bent, arms straight in front.','Open the top arm across to the other side, follow it with your eyes.','8 reps per side.'], tip:''},
-  deepsquat:{photo:null, q:'assisted deep squat hold', steps:['Hold a rack or post for balance.','Sink into a deep squat, heels down, chest up.','2 minutes total, breaks are fine.'], tip:''},
-  deadhang:{photo:'cage', q:'dead hang shoulder mobility', steps:['Hang from the pull-up bar, arms straight, shoulders relaxed.','2 × 30 seconds.'], tip:''},
+  foam:{pose:'foam', photo:null, q:'foam rolling quads it band upper back lats', steps:['Roll quads, IT band, upper back and lats.','Slow passes, pause on tight spots for 20–30 seconds.','5 minutes total.'], tip:''},
+  hip9090:{pose:'hip9090', photo:null, q:'90 90 hip stretch', steps:['Sit with both legs bent at 90°, one in front, one to the side.','Sit tall, lean slightly over the front shin.','60 seconds per side.'], tip:''},
+  tspine:{pose:'tspine', photo:null, q:'thoracic spine rotation open book', steps:['Lie on your side, knees bent, arms straight in front.','Open the top arm across to the other side, follow it with your eyes.','8 reps per side.'], tip:''},
+  deepsquat:{pose:'deepsquat', photo:null, q:'assisted deep squat hold', steps:['Hold a rack or post for balance.','Sink into a deep squat, heels down, chest up.','2 minutes total, breaks are fine.'], tip:''},
+  deadhang:{pose:'deadhang', photo:'cage', q:'dead hang shoulder mobility', steps:['Hang from the pull-up bar, arms straight, shoulders relaxed.','2 × 30 seconds.'], tip:''},
 
   /* ---------- SWAPS (generic by swap key) ---------- */
   'incline_bp__hoist':{photo:'hoistincline', q:'hoist roc-it incline press',
@@ -629,6 +715,7 @@ const SKETCH_FOR = {ab_wheel_mon:'abwheel', ab_wheel_wed:'abwheel', ab_wheel_sat
   rear_delt:'dumbbell', lateral:'dumbbell', rdl:'dumbbell', hammer:'dumbbell', dbcurl:'dumbbell', dbrdl:'dumbbell',
   leg_raise:'captain'};
 function sketchFor(ex, info){
+  if(info.pose) return null;   // a figure drawing replaces the equipment sketch
   if(info.photo && PHOTOS[info.photo] && !['rear_delt','lateral','rdl','hammer','dbcurl','dbrdl'].includes(ex.swapKey||ex.id)) return null;
   const k = SKETCH_FOR[ex.swapKey||''] || SKETCH_FOR[ex.baseId||ex.id];
   return k ? SKETCH[k] : null;
@@ -866,11 +953,12 @@ function openHow(ex, info){
   document.getElementById('hs-title').textContent = ex.name.replace(/^[A-Z]\d? · |^\d · /,'');
   const photo = info.photo && PHOTOS[info.photo];
   const sketch = sketchFor(ex, info);
-  const tgt = ex.type==='cardio' ? '' : `${ex.sets} × ${ex.repsMin===ex.repsMax?ex.repsMin:ex.repsMin+'–'+ex.repsMax}`;
+  const tgt = info.hold ? info.hold : ex.type==='cardio' ? '' : `${ex.sets} × ${ex.repsMin===ex.repsMax?ex.repsMin:ex.repsMin+'–'+ex.repsMax}`;
   document.getElementById('hs-body').innerHTML =
+    (info.pose && POSES[info.pose] ? `<div class="hs-sketch hs-pose"><svg viewBox="0 0 200 140" role="img" aria-label="Drawing of the position" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">${POSES[info.pose]}</svg><div class="hs-cap">The position</div></div>` : '') +
     (sketch ? `<div class="hs-sketch">${sketch.svg}<div class="hs-cap">Look for: <b>${sketch.label}</b></div></div>` : '') +
     (photo ? `<img class="hs-photo" src="${photo}" alt="Photo of the machine in your gym"><div class="hs-cap">Your gym · tap photo to zoom</div>` : '') +
-    (tgt ? `<div class="hs-target">Target: ${tgt}</div>` : '') +
+    (tgt ? `<div class="hs-target">${info.hold?'Hold':'Target'}: ${tgt}</div>` : '') +
     `<ol class="hs-steps">${info.steps.map(x=>`<li>${esc(x)}</li>`).join('')}</ol>` +
     (info.tip ? `<div class="hs-tip">💡 ${esc(info.tip)}</div>` : '') +
     `<a class="hs-video" href="https://www.youtube.com/results?search_query=${encodeURIComponent(info.q)}" target="_blank" rel="noopener">▶ Watch a demo video</a>` +
@@ -1056,7 +1144,18 @@ function renderToday(){
   if(p.stretch){
     const st = document.createElement('div');
     st.className='card';
-    st.innerHTML = `<div class="ex-name">Post-workout stretches</div><div class="ex-note">${p.stretch}</div>`;
+    st.innerHTML = `<div class="ex-name">Post-workout stretches</div><div class="ex-note">Hold each gently — no bouncing. Tap How for the picture and steps.</div>`;
+    const list = stretchList(p.stretch);
+    list.forEach(n=>{
+      const S = STRETCHES[n];
+      const row = document.createElement('div'); row.className='st-row';
+      row.innerHTML = `<div class="st-txt"><b>#${n} ${S.name}</b><span>${S.hold}</span></div>`;
+      const hb = document.createElement('button'); hb.className='how-btn'; hb.textContent='How';
+      hb.setAttribute('aria-label','How to do the '+S.name);
+      hb.onclick = ()=>openHow({name:S.name, type:'cardio', id:'stretch'+n}, S);
+      row.appendChild(hb); st.appendChild(row);
+    });
+    if(!list.length) st.insertAdjacentHTML('beforeend', `<div class="ex-note">${p.stretch}</div>`);
     v.appendChild(st);
   }
 }
