@@ -216,7 +216,7 @@ svg.spark{width:100%;height:120px;display:block}
 
 <div id="resttimer">
   <div class="t" id="rt-time">1:15</div>
-  <div class="lbl">Rest — next set when it hits zero</div>
+  <div class="lbl" id="rt-lbl">Rest — next set when it hits zero</div>
   <button id="rt-add">+30s</button>
   <button id="rt-skip">Skip</button>
 </div>
@@ -643,7 +643,11 @@ function infoFor(ex){
 
 const INC = {heavy:5, upper:2.5, iso:2, body:0, assist:-2.5};
 const DAYNAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-const REST_SECONDS = 75;
+/* Rest by exercise type: heavy compounds need longer to recover than isolation work. */
+const REST_BY_TYPE = {heavy:150, upper:120, assist:120, iso:75, body:75};
+const REST_OVERRIDE = {pullup:120, incline_bp:150, military:150};   // big lifts typed by their +kg step
+const REST_LABEL = {150:'heavy lift', 120:'compound', 75:'isolation'};
+function restFor(ex){ return REST_OVERRIDE[ex.id] || REST_BY_TYPE[ex.type] || 75; }
 
 /* ============================================================
    IndexedDB
@@ -795,6 +799,8 @@ function stallInfo(ex){
    ============================================================ */
 let rtEnd=0, rtInt=null, actx=null;
 function startRest(sec){
+  const m=Math.floor(sec/60), s=sec%60;
+  document.getElementById('rt-lbl').textContent = `Rest ${m}:${String(s).padStart(2,'0')}${REST_LABEL[sec]?' · '+REST_LABEL[sec]:''} — next set at zero`;
   rtEnd = Date.now()+sec*1000;
   document.getElementById('resttimer').classList.add('on');
   clearInterval(rtInt); rtInt=setInterval(tickRest,250); tickRest();
@@ -1042,7 +1048,7 @@ function renderToday(){
       const id = await addLog(entry);
       entry.id=id; state.logs.push(entry); s.loggedId=id;
       paint();
-      if(ex.type!=='cardio') startRest(REST_SECONDS);
+      if(ex.type!=='cardio') startRest(restFor(ex));
     }
     paint();
   });
