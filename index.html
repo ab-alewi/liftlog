@@ -913,18 +913,19 @@ function unlockAudio(){ // iOS only allows sound from an audio context first tou
 }
 /* Phone vibration. iPhone Safari ignores navigator.vibrate, but since iOS 18 flipping a
    native switch control gives a short haptic tap — we use a hidden one. */
-let hapLabel=null;
-function haptic(times){
+/* Same pattern as the open-source "ios-haptics" helper: a switch input inside a label,
+   clicked synchronously. iOS only allows this haptic in direct response to a touch. */
+function hapticTap(){
   try{
-    if(navigator.vibrate && navigator.vibrate(times>1?[180,120,180,120,180]:30)) return;
-    if(!hapLabel){
-      const inp=document.createElement('input'); inp.type='checkbox'; inp.setAttribute('switch',''); inp.id='hapsw';
-      hapLabel=document.createElement('label'); hapLabel.htmlFor='hapsw';
-      const box=document.createElement('div'); box.style.cssText='position:fixed;left:-9999px;top:0;opacity:0;pointer-events:none';
-      box.append(inp,hapLabel); document.body.appendChild(box);
-    }
-    for(let i=0;i<times;i++) setTimeout(()=>hapLabel.click(), i*220);
+    const label=document.createElement('label'); label.setAttribute('aria-hidden','true'); label.style.display='none';
+    const inp=document.createElement('input'); inp.type='checkbox'; inp.setAttribute('switch','');
+    label.appendChild(inp); document.head.appendChild(label); label.click(); document.head.removeChild(label);
   }catch(e){}
+}
+function haptic(times){
+  try{ if(navigator.vibrate && navigator.vibrate(times>1?[180,120,180,120,180]:30)) return; }catch(e){}
+  hapticTap();                                             // first pulse synchronously (keeps the touch "gesture")
+  for(let i=1;i<times;i++) setTimeout(hapticTap, i*220);
 }
 function buzz(){
   haptic(4);
@@ -1254,7 +1255,7 @@ function renderHistory(){
 function renderExport(){
   const v=document.getElementById('view'); v.innerHTML='';
   const c=document.createElement('div'); c.className='card';
-  c.innerHTML=`<div class="ex-name">Backup & restore</div>
+  c.innerHTML=`<div class="ex-name">Backup & restore</div><div class="hint">App version 9</div>
     <div class="hint">Your history lives only on this phone. Export a backup now and then — especially before clearing Safari data or switching phones.</div>`;
   const bj=document.createElement('button');bj.className='exp-btn primary';bj.textContent='⬇ Export JSON (full backup)';
   const bc=document.createElement('button');bc.className='exp-btn';bc.textContent='⬇ Export CSV (for spreadsheets)';

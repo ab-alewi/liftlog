@@ -1,6 +1,6 @@
 /* Lift Log service worker — caches the app so it works fully offline.
    When you update index.html, bump the CACHE version below so phones fetch the new file. */
-const CACHE = 'liftlog-v8';
+const CACHE = 'liftlog-v9';
 const FILES = ['./', './index.html', './icon-180.png', './manifest.json'];
 
 self.addEventListener('install', e => {
