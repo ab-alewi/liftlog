@@ -907,7 +907,34 @@ function restDone(){
   clearTimeout(flashT); flashT=setTimeout(()=>f.classList.remove('on'),6000);
 }
 document.getElementById('restflash').onclick = ()=>document.getElementById('restflash').classList.remove('on');
-function unlockAudio(){ // iOS only allows sound from an audio context first touched by a tap
+/* Rest-end beep as a real audio clip (3 beeps, generated here, no download).
+   An <audio> clip plays even when the iPhone is on silent; the old tone generator didn't.
+   iOS only lets it play later if it was started once by a tap, so every ✓ tap "primes" it. */
+let beepEl=null;
+function makeBeepWav(){
+  const rate=16000, beep=0.16, gap=0.12, n=3, len=Math.floor(rate*(n*beep+(n-1)*gap+0.05));
+  const buf=new ArrayBuffer(44+len*2), dv=new DataView(buf);
+  const w=(o,str)=>{for(let i=0;i<str.length;i++)dv.setUint8(o+i,str.charCodeAt(i));};
+  w(0,'RIFF'); dv.setUint32(4,36+len*2,true); w(8,'WAVE'); w(12,'fmt '); dv.setUint32(16,16,true);
+  dv.setUint16(20,1,true); dv.setUint16(22,1,true); dv.setUint32(24,rate,true); dv.setUint32(28,rate*2,true);
+  dv.setUint16(32,2,true); dv.setUint16(34,16,true); w(36,'data'); dv.setUint32(40,len*2,true);
+  for(let i=0;i<len;i++){
+    const t=i/rate, k=Math.floor(t/(beep+gap)), inB=k<n && (t-k*(beep+gap))<beep;
+    const env=inB?Math.min(1,(t-k*(beep+gap))*200,(beep-(t-k*(beep+gap)))*200):0;
+    dv.setInt16(44+i*2, inB? Math.sin(2*Math.PI*1000*t)*0.85*env*32767 : 0, true);
+  }
+  let bin=''; const u8=new Uint8Array(buf); for(let i=0;i<u8.length;i++) bin+=String.fromCharCode(u8[i]);
+  return 'data:audio/wav;base64,'+btoa(bin);
+}
+function setSession(type){ try{ if(navigator.audioSession) navigator.audioSession.type=type; }catch(e){} }
+function unlockAudio(){ // call from a tap
+  try{
+    if(!beepEl){ beepEl=new Audio(makeBeepWav()); beepEl.preload='auto'; }
+    setSession('transient');            // short alert sound: briefly lowers music instead of stopping it
+    beepEl.muted=true;
+    const p=beepEl.play();
+    if(p&&p.then) p.then(()=>{ beepEl.pause(); beepEl.currentTime=0; beepEl.muted=false; }).catch(()=>{ beepEl.muted=false; });
+  }catch(e){}
   try{ if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)();
        if(actx.state==='suspended') actx.resume(); }catch(e){}
 }
@@ -929,6 +956,13 @@ function haptic(times){
 }
 function buzz(){
   haptic(4);
+  if(beepEl){
+    try{ setSession('transient'); beepEl.muted=false; beepEl.volume=1; beepEl.currentTime=0;
+         const p=beepEl.play(); if(p&&p.catch) p.catch(()=>beepTone()); return; }catch(e){}
+  }
+  beepTone();
+}
+function beepTone(){
   try{
     if(!actx) return;
     if(actx.state==='suspended') actx.resume();
@@ -1255,12 +1289,18 @@ function renderHistory(){
 function renderExport(){
   const v=document.getElementById('view'); v.innerHTML='';
   const c=document.createElement('div'); c.className='card';
-  c.innerHTML=`<div class="ex-name">Backup & restore</div><div class="hint">App version 10</div>
+  c.innerHTML=`<div class="ex-name">Backup & restore</div><div class="hint">App version 11</div>
     <div class="hint">Your history lives only on this phone. Export a backup now and then — especially before clearing Safari data or switching phones.</div>`;
   const bj=document.createElement('button');bj.className='exp-btn primary';bj.textContent='⬇ Export JSON (full backup)';
   const bc=document.createElement('button');bc.className='exp-btn';bc.textContent='⬇ Export CSV (for spreadsheets)';
   const bi=document.createElement('button');bi.className='exp-btn';bi.textContent='⬆ Import JSON backup';
   c.append(bj,bc,bi); v.appendChild(c);
+  const t=document.createElement('div'); t.className='card';
+  t.innerHTML=`<div class="ex-name">Test the rest alert</div>
+    <div class="hint">Starts a 5-second rest, then flashes and beeps exactly like a real rest. Try it with silent mode on and off.</div>`;
+  const tb=document.createElement('button'); tb.className='exp-btn primary'; tb.textContent='▶ Test 5-second rest';
+  tb.onclick=()=>{ unlockAudio(); haptic(1); startRest(5); };
+  t.appendChild(tb); v.appendChild(t);
   const dl=(name,text,type)=>{const a=document.createElement('a');
     a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();};
   bj.onclick=()=>dl('liftlog-backup-'+todayStr()+'.json',JSON.stringify(state.logs,null,1),'application/json');

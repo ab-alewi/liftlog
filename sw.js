@@ -3,7 +3,7 @@
      falling back to the saved copy when offline or the network is slow.
    - Other files (icon, manifest): cache first.
    Bump CACHE when files change. */
-const CACHE = 'liftlog-v10';
+const CACHE = 'liftlog-v11';
 const FILES = ['./', './index.html', './icon-180.png', './manifest.json'];
 
 self.addEventListener('install', e => {
