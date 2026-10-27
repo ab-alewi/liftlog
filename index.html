@@ -1255,7 +1255,7 @@ function renderHistory(){
 function renderExport(){
   const v=document.getElementById('view'); v.innerHTML='';
   const c=document.createElement('div'); c.className='card';
-  c.innerHTML=`<div class="ex-name">Backup & restore</div><div class="hint">App version 9</div>
+  c.innerHTML=`<div class="ex-name">Backup & restore</div><div class="hint">App version 10</div>
     <div class="hint">Your history lives only on this phone. Export a backup now and then — especially before clearing Safari data or switching phones.</div>`;
   const bj=document.createElement('button');bj.className='exp-btn primary';bj.textContent='⬇ Export JSON (full backup)';
   const bc=document.createElement('button');bc.className='exp-btn';bc.textContent='⬇ Export CSV (for spreadsheets)';
@@ -1313,7 +1313,10 @@ openDB().then(getAllLogs).then(logs=>{state.logs=logs;loadSwaps();renderWeekChip
 <script>
 /* Offline support: register service worker (requires hosting over https) */
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js').catch(()=>{});
+  navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{
+    // check for a newer version every time the app comes back to the screen
+    document.addEventListener('visibilitychange',()=>{ if(!document.hidden) reg.update().catch(()=>{}); });
+  }).catch(()=>{});
 }
 </script>
 </body>

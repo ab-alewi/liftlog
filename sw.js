@@ -1,6 +1,9 @@
-/* Lift Log service worker — caches the app so it works fully offline.
-   When you update index.html, bump the CACHE version below so phones fetch the new file. */
-const CACHE = 'liftlog-v9';
+/* Lift Log service worker.
+   - The app page itself: NETWORK FIRST (always the newest version when online),
+     falling back to the saved copy when offline or the network is slow.
+   - Other files (icon, manifest): cache first.
+   Bump CACHE when files change. */
+const CACHE = 'liftlog-v10';
 const FILES = ['./', './index.html', './icon-180.png', './manifest.json'];
 
 self.addEventListener('install', e => {
@@ -15,18 +18,38 @@ self.addEventListener('activate', e => {
   );
 });
 
-/* Cache-first: serve from cache, fall back to network (and refresh cache in background). */
+function isPage(req){
+  if (req.mode === 'navigate') return true;
+  const u = new URL(req.url);
+  return u.pathname.endsWith('/') || u.pathname.endsWith('/index.html');
+}
+
 self.addEventListener('fetch', e => {
-  e.respondWith(
-    caches.match(e.request).then(cached => {
-      const fresh = fetch(e.request).then(res => {
-        if (res && res.ok && e.request.method === 'GET') {
-          const copy = res.clone();
-          caches.open(CACHE).then(c => c.put(e.request, copy));
-        }
+  const req = e.request;
+  if (req.method !== 'GET') return;
+
+  if (isPage(req)) {
+    e.respondWith((async () => {
+      const cache = await caches.open(CACHE);
+      try {
+        // give the network 4 seconds (gym Wi-Fi can be slow), then use the saved copy
+        const res = await Promise.race([
+          fetch(req, {cache: 'no-store'}),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('slow')), 4000))
+        ]);
+        if (res && res.ok) cache.put('./index.html', res.clone());
         return res;
-      }).catch(() => cached);
-      return cached || fresh;
-    })
+      } catch (err) {
+        return (await cache.match('./index.html')) || (await cache.match('./')) || Response.error();
+      }
+    })());
+    return;
+  }
+
+  e.respondWith(
+    caches.match(req).then(cached => cached || fetch(req).then(res => {
+      if (res && res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
+      return res;
+    }))
   );
 });
